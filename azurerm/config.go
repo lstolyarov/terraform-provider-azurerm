@@ -116,7 +116,6 @@ type ArmClient struct {
 	sqlElasticPoolsClient sql.ElasticPoolsClient
 
 	appServicePlansClient web.AppServicePlansClient
-	appsClient web.AppsClient
 
   sqlServersClient      sql.ServersClient
 
@@ -537,12 +536,6 @@ func (c *Config) getArmClient() (*ArmClient, error) {
 	aspc.Authorizer = auth
 	aspc.Sender = autorest.CreateSender(withRequestLogging())
 	client.appServicePlansClient = aspc
-  
-	ac := web.NewAppsClientWithBaseURI(endpoint, c.SubscriptionID)
-	setUserAgent(&ac.Client)
-	ac.Authorizer = auth
-	ac.Sender = autorest.CreateSender(withRequestLogging())
-	client.appsClient = ac
 
   sqlsrv := sql.NewServersClientWithBaseURI(endpoint, c.SubscriptionID)
 	setUserAgent(&sqlsrv.Client)
@@ -561,7 +554,7 @@ func (c *Config) getArmClient() (*ArmClient, error) {
 	spc.Authorizer = graphAuth
 	spc.Sender = autorest.CreateSender(withRequestLogging())
 	client.servicePrincipalsClient = spc
-  
+
 	return &client, nil
 }
 

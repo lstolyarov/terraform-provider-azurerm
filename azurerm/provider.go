@@ -137,7 +137,6 @@ func Provider() terraform.ResourceProvider {
 			"azurerm_virtual_network_peering":   resourceArmVirtualNetworkPeering(),
 
 			"azurerm_app_service_plan": resourceArmAppServicePlan(),
-			"azurerm_app_service": resourceArmAppService(),
 
 			// These resources use the Riviera SDK
 			"azurerm_resource_group":    resourceArmResourceGroup(),
