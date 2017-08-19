@@ -117,7 +117,7 @@ type ArmClient struct {
 
 	appServicePlansClient web.AppServicePlansClient
 
-  sqlServersClient      sql.ServersClient
+	sqlServersClient sql.ServersClient
 
 	appInsightsClient appinsights.ComponentsClient
 
@@ -537,7 +537,7 @@ func (c *Config) getArmClient() (*ArmClient, error) {
 	aspc.Sender = autorest.CreateSender(withRequestLogging())
 	client.appServicePlansClient = aspc
 
-  sqlsrv := sql.NewServersClientWithBaseURI(endpoint, c.SubscriptionID)
+	sqlsrv := sql.NewServersClientWithBaseURI(endpoint, c.SubscriptionID)
 	setUserAgent(&sqlsrv.Client)
 	sqlsrv.Authorizer = auth
 	sqlsrv.Sender = autorest.CreateSender(withRequestLogging())
