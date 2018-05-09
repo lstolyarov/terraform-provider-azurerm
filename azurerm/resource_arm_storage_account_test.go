@@ -345,6 +345,32 @@ func TestAccAzureRMStorageAccount_NonStandardCasing(t *testing.T) {
 	})
 }
 
+func TestAccAzureRMStorageAccount_keyVaultEncryption(t *testing.T) {
+	ri := acctest.RandInt()
+	rs := acctest.RandString(4)
+	preConfig := testAccAzureRMStorageAccount_keyVaultEncryption(ri, rs, testLocation())
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckAzureRMStorageAccountDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: preConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMStorageAccountExists("azurerm_storage_account.testsa"),
+				),
+			},
+
+			{
+				Config:             preConfig,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 func testCheckAzureRMStorageAccountExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Ensure we have enough information in state to look up in API
@@ -737,4 +763,89 @@ resource "azurerm_storage_account" "testsa" {
     }
 }
 `, rInt, location, rString)
+}
+
+func testAccAzureRMStorageAccount_keyVaultEncryption(rInt int, rString string, location string) string {
+	return fmt.Sprintf(`
+data "azurerm_client_config" "current" {}
+resource "azurerm_resource_group" "testrg" {
+    name = "testAccAzureRMSA-%d"
+    location = "%s"
+}
+resource "azurerm_key_vault" "testkv" {
+  name                = "testAccAzureRMSAKV%s"
+  location            = "%s"
+  resource_group_name = "${azurerm_resource_group.testrg.name}"
+  sku {
+    name = "standard"
+  }
+	tenant_id = "${data.azurerm_client_config.current.tenant_id}"
+  access_policy {
+		tenant_id = "${data.azurerm_client_config.current.tenant_id}"
+    object_id = "${data.azurerm_client_config.current.service_principal_object_id}"
+    key_permissions = [
+      "create",
+      "get",
+			"delete",
+    ]
+    secret_permissions = [
+      "set",
+    ]
+  }
+	access_policy {
+		tenant_id = "${data.azurerm_client_config.current.tenant_id}"
+    object_id = "2ff0585c-b4d2-4b98-863d-196a6496428c"
+    key_permissions = [
+      "list",
+      "get",
+    ]
+    secret_permissions = [
+      "set",
+    ]
+  }
+	access_policy {
+		tenant_id = "${data.azurerm_client_config.current.tenant_id}"
+    object_id = "1f49e8aa-5fd0-4576-87f4-53ae987f19ab"
+    key_permissions = [
+      "Get",
+      "List",
+      "Update",
+      "Create",
+      "Import",
+      "Delete",
+      "Recover",
+      "Backup",
+      "Restore",
+    ]
+    secret_permissions = []
+  }
+}
+resource "azurerm_key_vault_key" "testkvk" {
+  name      = "generated-certificate"
+  vault_uri = "${azurerm_key_vault.testkv.vault_uri}"
+  key_type  = "RSA"
+  key_size  = 2048
+  key_opts = [
+    "decrypt",
+    "encrypt",
+    "sign",
+    "unwrapKey",
+    "verify",
+    "wrapKey",
+  ]
+}
+resource "azurerm_storage_account" "testsa" {
+    name = "unlikely23exst2acct%s"
+    resource_group_name = "${azurerm_resource_group.testrg.name}"
+    location = "${azurerm_resource_group.testrg.location}"
+    account_tier = "standard"
+    account_replication_type = "lrs"
+		enable_blob_encryption = true
+		enable_file_encryption = true
+		account_encryption_source = "Microsoft.Keyvault"
+		account_encryption_key_vault_uri = "${azurerm_key_vault.testkv.vault_uri}"
+		account_encryption_key_vault_key_name = "${azurerm_key_vault_key.testkvk.name}"
+		account_encryption_key_vault_key_version = "${azurerm_key_vault_key.testkvk.version}"
+}
+`, rInt, location, rString, location, rString)
 }

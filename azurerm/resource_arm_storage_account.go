@@ -104,6 +104,21 @@ func resourceArmStorageAccount() *schema.Resource {
 				DiffSuppressFunc: ignoreCaseDiffSuppressFunc,
 			},
 
+			"account_encryption_key_vault_uri": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"account_encryption_key_vault_key_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"account_encryption_key_vault_key_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			"custom_domain": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -239,6 +254,9 @@ func resourceArmStorageAccountCreate(d *schema.ResourceData, meta interface{}) e
 	replicationType := d.Get("account_replication_type").(string)
 	storageType := fmt.Sprintf("%s_%s", accountTier, replicationType)
 	storageAccountEncryptionSource := d.Get("account_encryption_source").(string)
+	keyName := d.Get("account_encryption_key_vault_key_name").(string)
+	keyVaultURI := d.Get("account_encryption_key_vault_uri").(string)
+	keyVersion := d.Get("account_encryption_key_vault_key_version").(string)
 
 	parameters := storage.AccountCreateParameters{
 		Location: &location,
@@ -254,6 +272,11 @@ func resourceArmStorageAccountCreate(d *schema.ResourceData, meta interface{}) e
 						Enabled: utils.Bool(enableBlobEncryption),
 					}},
 				KeySource: storage.KeySource(storageAccountEncryptionSource),
+				KeyVaultProperties: &storage.KeyVaultProperties{
+					KeyName:     &keyName,
+					KeyVaultURI: &keyVaultURI,
+					KeyVersion:  &keyVersion,
+				},
 			},
 			EnableHTTPSTrafficOnly: &enableHTTPSTrafficOnly,
 		},
